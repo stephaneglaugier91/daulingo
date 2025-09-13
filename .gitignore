@@ -1,9 +1,3 @@
-# Microconfig generated files
-application.yaml
-process.yaml
-diff-application.yaml
-diff-process.yaml
-
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -167,4 +161,5 @@ cython_debug/
 *.iml
 
 .vscode/
-daulingo.db
+
+*.db

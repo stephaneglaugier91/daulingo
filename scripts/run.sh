@@ -28,8 +28,6 @@ fi
 run_step "0_create_tables.py"
 run_step "1_upload_data.py"
 run_step "2_compute_user_state_daily.py"
-run_step "3_inspect_user_state_daily.py"
-run_step "4_compute_retention_rates.py"
 
 echo ""
 echo "✅ All steps completed successfully."
