@@ -10,7 +10,7 @@ DATABASE_URL="sqlite:///daulingo.db"
 USER_STATES_API_BASE="http://localhost:8000/v1"
 ```
 
-Run the follwing commands:
+Run the following commands:
 ```bash
 pip install -e .
 
