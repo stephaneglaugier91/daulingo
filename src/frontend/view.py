@@ -1,70 +1,76 @@
 import streamlit as st
 
-from .charts import area_stack_chart
-from .data_client import (
-    download_excel,
+from frontend.charts import area_stack_chart
+from frontend.data_client import (
     fetch_date_range,
+    fetch_excel_url,
     fetch_states,
     fetch_timeseries,
+    post_compute,
 )
-from .tables import to_wide
+from frontend.tables import to_wide
 
 
 def render() -> None:
     st.set_page_config(page_title="DAU-lingo", layout="wide")
-    st.title("DAU-lingo: Duolingo-style usage metrics")
+    _, col_main, _ = st.columns([1, 6, 1])
+    with col_main:
+        st.title("DAU-lingo: Duolingo-style usage metrics")
 
-    try:
-        min_date, max_date = fetch_date_range()
-        state_order = fetch_states()
-    except Exception as e:
-        st.error(f"Failed to load metadata: {e}")
-        st.stop()
+        col1, col2, col3, _ = st.columns([2, 2, 2, 2])
 
-    col1, _ = st.columns([1, 4])
-    with col1:
-        date_range = st.date_input(
-            "Date range",
-            value=(min_date, max_date),
-            min_value=min_date,
-            max_value=max_date,
-        )
+        with col3:
+            refresh_clicked = st.button("Refresh", key="refresh_top")
+            if refresh_clicked:
+                sd = st.session_state.get("start_date")
+                ed = st.session_state.get("end_date")
+                if sd is None or ed is None:
+                    min_d, max_d = fetch_date_range()
+                    sd, ed = min_d, max_d
 
-    if isinstance(date_range, tuple):
-        start_date, end_date = date_range
-    else:
-        start_date = end_date = date_range
+                with st.spinner("Refreshing data…"):
+                    post_compute(sd, ed)
 
-    if start_date > end_date:
-        st.warning("Start date must be before end date.")
-        st.stop()
+                st.rerun()
+        with st.spinner("Loading metadata…"):
+            min_date, max_date = fetch_date_range()
+            state_order = fetch_states()
 
-    with st.spinner("Loading data…"):
-        try:
-            df = fetch_timeseries(start_date, end_date)
-        except Exception as e:
-            st.error(f"Failed to load data: {e}")
+        with col1:
+            start_date = st.date_input(
+                "Start date",
+                value=min_date,
+                min_value=min_date,
+                max_value=max_date,
+                key="start_date",
+            )
+        with col2:
+            end_date = st.date_input(
+                "End date",
+                value=max_date,
+                min_value=start_date,
+                max_value=max_date,
+                key="end_date",
+            )
+
+        if start_date > end_date:
+            st.warning("Start date must be before end date.")
             st.stop()
 
-    if df.empty:
-        st.info("No data for the selected date range.")
-        return
+        with st.spinner("Loading data…"):
+            df = fetch_timeseries(start_date, end_date)
 
-    df, wide = to_wide(df, state_order)
-    chart = area_stack_chart(df, state_order)
-    st.altair_chart(chart, use_container_width=True)
+        if df.empty:
+            st.info("No data for the selected date range.")
+            return
 
-    try:
-        xlsx_bytes = download_excel(start_date, end_date)
-        st.download_button(
-            "Export to Excel",
-            data=xlsx_bytes,
-            file_name=f"user_states_{start_date}_to_{end_date}.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        )
-    except Exception as e:
-        with st.expander("Export error"):
-            st.write(str(e))
+        df, wide = to_wide(df, state_order)
+        chart = area_stack_chart(df, state_order)
+        st.altair_chart(chart)
 
-    st.caption("Daily counts by status (wide)")
-    st.dataframe(wide)
+        link_col, _ = st.columns([1, 4])
+        with link_col:
+            st.link_button("Download Excel", url=fetch_excel_url(start_date, end_date))
+
+        st.caption("Daily counts by status (wide)")
+        st.dataframe(wide)

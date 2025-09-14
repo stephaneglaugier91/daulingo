@@ -1,17 +1,16 @@
 from fastapi import APIRouter, Depends
 
-from backend.dependencies import get_db
+from backend.dependencies import get_user_state_daily_repo
 from backend.domain.enums import STATE_ORDER
 from backend.domain.models import DateRange, StatesResponse
-from backend.infra.database import Database
-from backend.repositories.user_states import get_min_max_dates
+from backend.repositories.user_state_daily_repo import UserStateDailyRepo
 
 router = APIRouter(prefix="/v1")
 
 
 @router.get("/meta/date-range", response_model=DateRange)
-def date_range(db: Database = Depends(get_db)):
-    mn, mx = get_min_max_dates(db)
+def date_range(db: UserStateDailyRepo = Depends(get_user_state_daily_repo)):
+    mn, mx = db.get_min_max_dates()
     return {"min_date": mn, "max_date": mx}
 
 

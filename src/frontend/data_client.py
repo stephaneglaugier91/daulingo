@@ -1,14 +1,13 @@
 from datetime import date
 from typing import List, Tuple
+from urllib.parse import urlencode
 
 import pandas as pd
 import requests
-import streamlit as st
 
-from .config import get_settings
+from frontend.config import get_settings
 
 
-@st.cache_data(ttl=300)
 def fetch_states() -> List[str]:
     s = get_settings()
     r = requests.get(f"{s.backend_url}/states", timeout=30)
@@ -16,7 +15,6 @@ def fetch_states() -> List[str]:
     return r.json()["states"]
 
 
-@st.cache_data(ttl=300)
 def fetch_date_range() -> Tuple[date, date]:
     s = get_settings()
     r = requests.get(f"{s.backend_url}/meta/date-range", timeout=30)
@@ -25,7 +23,6 @@ def fetch_date_range() -> Tuple[date, date]:
     return pd.to_datetime(j["min_date"]).date(), pd.to_datetime(j["max_date"]).date()
 
 
-@st.cache_data(ttl=300)
 def fetch_timeseries(start: date, end: date) -> pd.DataFrame:
     s = get_settings()
     r = requests.get(
@@ -42,12 +39,17 @@ def fetch_timeseries(start: date, end: date) -> pd.DataFrame:
     return df
 
 
-def download_excel(start: date, end: date) -> bytes:
+def fetch_excel_url(start_date, end_date) -> str:
+    s = get_settings()  # must return an object with .backend_url
+    params = urlencode({"start": str(start_date), "end": str(end_date)})
+    return f"{s.backend_url.rstrip('/')}/timeseries.xlsx?{params}"
+
+
+def post_compute(start_date, end_date) -> None:
     s = get_settings()
-    r = requests.get(
-        f"{s.backend_url}/timeseries.xlsx",
-        params={"start": str(start), "end": str(end)},
-        timeout=120,
-    )
+    url = f"{s.backend_url}/compute"
+    if start_date and end_date:
+        url += f"?start_date={str(start_date)}&end_date={str(end_date)}"
+    r = requests.post(url, timeout=30)
     r.raise_for_status()
-    return r.content
+    print("Computation request sent for", start_date, end_date)

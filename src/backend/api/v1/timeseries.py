@@ -4,10 +4,11 @@ from datetime import date
 import pandas as pd
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
 
-from backend.dependencies import get_db
+from backend.dependencies import (
+    get_user_state_daily_repo,
+)
 from backend.domain.models import TimeseriesResponse
-from backend.infra.database import Database
-from backend.repositories.user_states import fetch_timeseries
+from backend.repositories.user_state_daily_repo import UserStateDailyRepo
 from backend.services.timeseries import (
     apply_weekend_filter,
     to_long_records,
@@ -24,11 +25,11 @@ def get_timeseries(
     exclude_weekends: bool = Query(True),
     capability: str | None = Query(None, description="reserved"),
     user: str | None = Query(None, description="reserved"),
-    db: Database = Depends(get_db),
+    db: UserStateDailyRepo = Depends(get_user_state_daily_repo),
 ):
     if end < start:
         raise HTTPException(400, "end before start")
-    df = fetch_timeseries(db, start, end)
+    df = db.fetch_timeseries(start, end)
     df = apply_weekend_filter(df, exclude_weekends)
     return {
         "start": start,
@@ -45,11 +46,11 @@ def get_timeseries_xlsx(
     exclude_weekends: bool = True,
     capability: str | None = None,
     user: str | None = None,
-    db: Database = Depends(get_db),
+    db: UserStateDailyRepo = Depends(get_user_state_daily_repo),
 ):
     if end < start:
         raise HTTPException(400, "end before start")
-    df = fetch_timeseries(db, start, end)
+    df = db.fetch_timeseries(start, end)
     df = apply_weekend_filter(df, exclude_weekends)
     w = wide_pivot(df)
 

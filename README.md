@@ -14,7 +14,7 @@ Run the follwing commands:
 ```bash
 pip install -e .
 
-bash ./scripts/run.sh
+python ./scripts/upload_activity_csv.py
 python ./scripts/run_backend.py
 python ./scripts/run_frontend.py
 ```

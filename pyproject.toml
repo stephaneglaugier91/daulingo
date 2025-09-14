@@ -1,7 +1,7 @@
 [project]
 name = "daulingo"
-version = "0.1.0"
-description = "Add your description here"
+version = "0.0.0"
+description = "Duolingo-style DAU analytics"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
